@@ -1,0 +1,7 @@
+{
+    "architecture": {
+        "neuron_input": 784,
+        "neuron_hidden": 12,
+        "neuron_output": 10
+    }
+}

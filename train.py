@@ -1,12 +1,11 @@
-import datetime
 import numpy as np
 import pandas as pd
-import json
-from hashlib import md5
+import json, datetime
+from hashlib import sha1
 
 
 start = str(datetime.datetime.now())[0:19]
-name_model = md5((str(datetime.datetime.now()) + str(np.random.random())).encode()).hexdigest()
+name_model = sha1((str(datetime.datetime.now()) + str(np.random.random())).encode()).hexdigest()
 def sigmoid(x):
     return 1.0/(1.0+np.exp(-x))
 
@@ -16,7 +15,7 @@ t2 = [0,0,1,0,0,0,0,0,0,0]
 t3 = [0,0,0,1,0,0,0,0,0,0]
 t4 = [0,0,0,0,1,0,0,0,0,0]
 t5 = [0,0,0,0,0,1,0,0,0,0]
-t6 = [0,0,0,0,0,0,1,0,0,0]datetime
+t6 = [0,0,0,0,0,0,1,0,0,0]
 t7 = [0,0,0,0,0,0,0,1,0,0]
 t8 = [0,0,0,0,0,0,0,0,1,0]
 t9 = [0,0,0,0,0,0,0,0,0,1]
@@ -27,6 +26,7 @@ neuronHidden = 12
 neuronOutput = 10
 alpha = 0.05         
 epochs = 0
+acc = 0.05
 
 V = (np.random.rand(neuronInput,neuronHidden)) -0.5
 W = (np.random.rand(neuronHidden,neuronOutput)) -0.5
@@ -49,66 +49,79 @@ dataset = pd.read_csv('dataset/mnist_train.csv')
 pixels = list(dataset.axes[1])
 pixels.pop(0)
 
-for row in range(len(dataset['label'])):
-    number = dataset['label'][row]
-    Xpad = []
-    for pixel in pixels:
-        Xpad.append(dataset[pixel][row])
-    Xpad = np.array(Xpad)/255
+quadratic_error = 10
+while acc < quadratic_error:
+    quadratic_error = 0
+    epochs += 1
 
-    for i in range(neuronHidden):
-        ac = 0
-        for j in range(neuronInput):
-            ac = ac + V[j][i] * Xpad[j]
-        Zin[i] = ac + Bv[i]
-        Z[i] = sigmoid(Zin[i])
+    for row in range(len(dataset['label'])):
+        number = int(dataset['label'][row])
+        Xpad = []
+        for pixel in pixels:
+            Xpad.append(dataset[pixel][row])
+        Xpad = np.array(Xpad)/255
 
+        for i in range(neuronHidden):
+            ac = 0
+            for j in range(neuronInput):
+                ac = ac + V[j][i] * Xpad[j]
+            Zin[i] = ac + Bv[i]
+            Z[i] = sigmoid(Zin[i])
+
+        for i in range(neuronOutput):
+            ac = 0
+            for j in range(neuronHidden):
+                ac = ac + Z[j] * W[j][i]
+            Yin[i] = ac + Bw[i]
+            Y[i] = sigmoid(Yin[i])
+
+        deltinhaW = (t[number] - Y) * (Y * (1 - Y))
+        for i in range(neuronHidden):
+            for j in range(neuronOutput):
+                deltaW[i][j] = alpha * deltinhaW[j]*Z[i]
+
+        deltaBw = alpha * deltinhaW
+
+        for i in range(neuronHidden):
+            for j in range(neuronOutput):
+                deltinhaV[i] = deltinhaW[j]*W[i][j]*(Z[i]*(1-Z[i]))
+
+        for i in range(neuronInput):
+            for k in range(neuronHidden):
+                deltaV[i][k] = alpha*deltinhaV[k]*Xpad[i]
+
+        deltaBv = alpha*deltinhaV
+
+        for i in range(neuronHidden):
+            for k in range(neuronOutput):
+                W[i][k] = W[i][k]+deltaW[i][k]
+
+        Bw = Bw + deltaBw
+
+        for i in range(neuronInput):
+            for j in range(neuronHidden):
+                V[i][j] = V[i][j] + deltaV[i][j]
+
+        Bv = Bv + deltaBv
+
+        #print('[INFO]: ')
+        print("[INFO]: Img: {}/60000\nConclusão: {}%\n".format(row,round((row/60000),2)))
+        print('[INFO]: ' + str(epochs))
+
+    #EqTotal = EqTotal + 0.5 * ((Ypad - Y[0])**2)
     for i in range(neuronOutput):
-        ac = 0
-        for j in range(neuronHidden):
-            ac = ac + Z[j] * W[j][i]
-        Yin[i] = ac + Bw[i]
-        Y[i] = sigmoid(Yin[i])
+        quadratic_error += 0.5((Y[i] - t[number][i])**2)
 
-    deltinhaW = (t[number] - Y) * (Y * (1 - Y))
-    for i in range(neuronHidden):
-        for j in range(neuronOutput):
-            deltaW[i][j] = alfa * deltinhaW[j]*Z[i]
-    
-    deltaBw = alfa * deltinhaW
+    #print("Img: {}/60000\nConclusão: {}%\n".format(row,round((row/60000),2)))
 
-    for i in range(neuronHidden):
-        for j in range(neuronOutput):
-            deltinhaV[i] = deltinhaW[j]*W[i][j]*(Z[i]*(1-Z[i]))
-
-    for i in range(neuronInput):
-        for k in range(neuronHidden):
-            deltaV[i][k] = alfa*deltinhaV[k]*Xpad[i]
-
-    deltaBv = alfa*deltinhaV
-
-    for i in range(neuronHidden):
-        for k in range(neuronOutput):
-            W[i][k] = W[i][k]+deltaW[i][k]
-
-    Bw = Bw + deltaBw
-
-    for i in range(neuronInput):
-        for j in range(neuronHidden):
-            V[i][j] = V[i][j] + deltaV[i][j]
-
-    Bv = Bv + deltaBv
-
-    print("Img: {}/60000\nConclusão: {}%\n".format(row,round((row/600),2)))
-
-end = str(datetime.now())[0:19]
+end = str(datetime.datetime.now())[0:19]
 
 # Salvando o modelo no final do ciclo
 model = {
     'architecture': {
         'neuron_input': neuronInput,
         'neuron_hidden': neuronHidden,
-        'neuron_output': neuron_Output
+        'neuron_output': neuronOutput
     },
     'connection_weights': {
         'weights_hidden': V,
