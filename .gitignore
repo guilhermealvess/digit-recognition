@@ -2,3 +2,5 @@ venv/
 .vscode/
 dataset/
 *.log
+model/
+*.csv

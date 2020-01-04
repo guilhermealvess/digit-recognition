@@ -1,42 +1,48 @@
 import numpy as np
 import pandas as pd
-import json, datetime
+import json
+import datetime
 from hashlib import sha1
-
+import pickle
+from pathlib import Path
 
 start = str(datetime.datetime.now())[0:19]
-name_model = sha1((str(datetime.datetime.now()) + str(np.random.random())).encode()).hexdigest()
+name_model = sha1((str(datetime.datetime.now()) +
+                   str(np.random.random())).encode()).hexdigest()
+
+
 def sigmoid(x):
     return 1.0/(1.0+np.exp(-x))
 
-t0 = [1,0,0,0,0,0,0,0,0,0]
-t1 = [0,1,0,0,0,0,0,0,0,0]
-t2 = [0,0,1,0,0,0,0,0,0,0]
-t3 = [0,0,0,1,0,0,0,0,0,0]
-t4 = [0,0,0,0,1,0,0,0,0,0]
-t5 = [0,0,0,0,0,1,0,0,0,0]
-t6 = [0,0,0,0,0,0,1,0,0,0]
-t7 = [0,0,0,0,0,0,0,1,0,0]
-t8 = [0,0,0,0,0,0,0,0,1,0]
-t9 = [0,0,0,0,0,0,0,0,0,1]
-t = [t0,t1,t2,t3,t4,t5,t6,t7,t8,t9]
+
+t0 = [1, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+t1 = [0, 1, 0, 0, 0, 0, 0, 0, 0, 0]
+t2 = [0, 0, 1, 0, 0, 0, 0, 0, 0, 0]
+t3 = [0, 0, 0, 1, 0, 0, 0, 0, 0, 0]
+t4 = [0, 0, 0, 0, 1, 0, 0, 0, 0, 0]
+t5 = [0, 0, 0, 0, 0, 1, 0, 0, 0, 0]
+t6 = [0, 0, 0, 0, 0, 0, 1, 0, 0, 0]
+t7 = [0, 0, 0, 0, 0, 0, 0, 1, 0, 0]
+t8 = [0, 0, 0, 0, 0, 0, 0, 0, 1, 0]
+t9 = [0, 0, 0, 0, 0, 0, 0, 0, 0, 1]
+t = [t0, t1, t2, t3, t4, t5, t6, t7, t8, t9]
 
 neuronInput = 784
 neuronHidden = 12
-neuronOutput = 10
-alpha = 0.05         
+neuronOutput = len(t)
+alpha = 0.05
 epochs = 0
 acc = 0.05
 
-V = (np.random.rand(neuronInput,neuronHidden)) -0.5
-W = (np.random.rand(neuronHidden,neuronOutput)) -0.5
-Bv = (np.random.rand(neuronHidden)) -0.5
-Bw = (np.random.rand(neuronOutput)) -0.5
+V = (np.random.rand(neuronInput, neuronHidden)) - 0.5
+W = (np.random.rand(neuronHidden, neuronOutput)) - 0.5
+Bv = (np.random.rand(neuronHidden)) - 0.5
+Bw = (np.random.rand(neuronOutput)) - 0.5
 
-Zin = np.zeros((neuronHidden),dtype=np.float64)
-Z = np.zeros((neuronHidden),dtype=np.float64)
-Yin = np.zeros((neuronOutput),dtype=np.float64)
-Y = np.zeros((neuronOutput),dtype=np.float64)
+Zin = np.zeros((neuronHidden), dtype=np.float64)
+Z = np.zeros((neuronHidden), dtype=np.float64)
+Yin = np.zeros((neuronOutput), dtype=np.float64)
+Y = np.zeros((neuronOutput), dtype=np.float64)
 
 deltaV = np.zeros((neuronInput, neuronHidden), dtype=np.float64)
 deltaW = np.zeros((neuronHidden, neuronOutput), dtype=np.float64)
@@ -105,7 +111,8 @@ while acc < quadratic_error:
         Bv = Bv + deltaBv
 
         #print('[INFO]: ')
-        print("[INFO]: Img: {}/60000\nConclusão: {}%\n".format(row,round((row/60000),2)))
+        print("[INFO]: Img: {}/60000\nConclusão: {}%\n".format(row,
+                                                               round((row/60000), 2)))
         print('[INFO]: ' + str(epochs))
 
     #EqTotal = EqTotal + 0.5 * ((Ypad - Y[0])**2)
@@ -138,13 +145,14 @@ model = {
     'results': {
         'epochs': epochs,
         'quadratic_error': '',
-        'alpha': alpha 
+        'alpha': alpha
     }
 }
-model = json.dumps(model)
 
-_json = open('model/'+name_model+'.json','wt')
 try:
-    _json.write(model)
+    if not Path('model/').exists():
+        Path('model/').mkdir()
+    f = open('model/{}.pickle'.format(name_model), 'wb')
+    f.write(pickle.dumps(model))
 finally:
-    _json.close()
+    f.close()
